@@ -36,3 +36,22 @@
     transform: rotate(360deg);
   }
 }
+
+
+.App {
+  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 20px;
+}
+
+canvas {
+  margin-top: 10px;
+  cursor: crosshair;
+}
+
+button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-size: 16px;
+}
+
