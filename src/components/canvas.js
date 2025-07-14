@@ -41,6 +41,15 @@ const Canvas = () => {
     };
   };
 
+  const getTouchPos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const touch = e.touches[0];
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
+  };
+
   const startDraw = (e) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -64,9 +73,35 @@ const Canvas = () => {
     ctx.stroke();
   };
 
-  const stopDraw = () => {
-    setDrawing(false);
+  const stopDraw = () => setDrawing(false);
+
+  // Touch Handlers
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const { x, y } = getTouchPos(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setDrawing(true);
+
+    setHistory((prev) => [
+      ...prev,
+      ctx.getImageData(0, 0, canvas.width, canvas.height),
+    ]);
+    setRedoStack([]);
   };
+
+  const handleTouchMove = (e) => {
+    if (!drawing) return;
+    e.preventDefault();
+    const ctx = canvasRef.current.getContext("2d");
+    const { x, y } = getTouchPos(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const handleTouchEnd = () => setDrawing(false);
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -78,16 +113,15 @@ const Canvas = () => {
 
   const saveCanvas = () => {
     const canvas = canvasRef.current;
-
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
     const tempCtx = tempCanvas.getContext("2d");
+
     tempCtx.fillStyle = "#ffffff";
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-    // Draw original canvas over it
     tempCtx.drawImage(canvas, 0, 0);
+
     const image = tempCanvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.href = image;
@@ -137,7 +171,6 @@ const Canvas = () => {
       </h2>
 
       <div className="flex flex-wrap gap-6 justify-center items-center mb-6">
-        {/* Color Picker */}
         <div className="flex items-center gap-2">
           <PaintBrushIcon className="h-6 w-6 text-gray-700" />
           <input
@@ -147,7 +180,6 @@ const Canvas = () => {
           />
         </div>
 
-        {/* Brush Size */}
         <div className="flex items-center gap-2">
           <label className="font-medium">Brush:</label>
           <input
@@ -160,7 +192,6 @@ const Canvas = () => {
           <span>{lineWidth}px</span>
         </div>
 
-        {/* Action Icons */}
         <div className="flex gap-4">
           <button onClick={undo} title="Undo">
             <ArrowUturnLeftIcon className="h-6 w-6 text-yellow-500 hover:scale-110 transition" />
@@ -185,11 +216,13 @@ const Canvas = () => {
           onMouseMove={draw}
           onMouseUp={stopDraw}
           onMouseLeave={stopDraw}
-          className="border-2 border-gray-300 rounded-lg bg-gray-100 w-full max-w-[1000px] h-[500px] cursor-crosshair"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="border-2 border-gray-300 rounded-lg bg-gray-100 w-full max-w-[1000px] h-[500px] cursor-crosshair touch-none"
         />
       </div>
 
-      {/* Toast message */}
       {toast && (
         <div className="fixed top-6 right-6 z-50">
           <div className="bg-green-100 text-green-700 px-4 py-2 rounded shadow-lg border border-green-300">
